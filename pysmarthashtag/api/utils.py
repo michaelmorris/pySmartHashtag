@@ -28,7 +28,7 @@ x-api-signature-version:1.0
 {method}
 {url}"""
     _LOGGER.debug("Payload: %s", payload)
-    secret = base64.b64decode("NzRlNzQ2OWFmZjUwNDJiYmJlZDdiYmIxYjM2YzE1ZTk=")
+    secret = base64.b64decode("MGU0MzFhZGY0YmY5NGE2YWI3YmUyYzY4NjhkNGMwNjQ=")
     payload = payload.encode("utf-8")
     hashed = hmac.new(secret, payload, hashlib.sha1).digest()
     signature = base64.b64encode(hashed).decode()
@@ -44,23 +44,23 @@ def generate_default_header(
     nonce = secrets.token_hex(8)
     sign = _create_sign(nonce, params, timestamp, method, url, body)
     header = {
-        "x-app-id": "SmartAPPEU",
+        "X-App-Id": "volvo_global_app",
+	"platform": "NON-CMA",
         "accept": "application/json;responseformat=3",
         "x-agent-type": "iOS",
+	"x-operator-code": "VOLVO-GLOBAL",
         "x-device-type": "mobile",
-        "x-operator-code": "SMART",
         "x-device-identifier": device_id,
         "x-env-type": "production",
-        "x-version": "smartNew",
-        "accept-language": "en_US",
+        "accept-language": "en_GB",
         "x-api-signature-version": "1.0",
         "x-api-signature-nonce": nonce,
         "x-device-manufacture": "Apple",
         "x-device-brand": "Apple",
         "x-device-model": "iPhone",
-        "x-agent-version": "17.1",
+        "x-agent-version": "17.5.1",
         "content-type": "application/json; charset=utf-8",
-        "user-agent": "Hello smart/1.4.0 (iPhone; iOS 17.1; Scale/3.00)",
+        "user-agent": "volvocar/1.6.0 (iPhone; iOS 17.5.1; Scale/3.00)",
         "x-signature": sign,
         "x-timestamp": str(timestamp),
     }

@@ -39,7 +39,7 @@ def main_parser() -> argparse.ArgumentParser:
         "loggers": {
             "pysmarthashtag": {
                 "handlers": ["default", "file"],
-                "level": "INFO",
+                "level": "DEBUG",
             },
             "httpx": {
                 "handlers": ["default"],
@@ -95,7 +95,7 @@ async def parse_command(args) -> None:
 
 async def get_status(args) -> None:
     """Get status of vehicle."""
-    account = SmartAccount(args.username, args.password)
+    account = SmartAccount(args.accesstoken)
     await account.get_vehicles()
 
     for vin, vehicle in account.vehicles.items():
@@ -104,7 +104,7 @@ async def get_status(args) -> None:
 
 async def get_vehicle_information(args) -> None:
     """Get status of vehicle."""
-    account = SmartAccount(args.username, args.password)
+    account = SmartAccount(args.accesstoken)
     await account.get_vehicles()
 
     for vin, vehicle in account.vehicles.items():
@@ -115,7 +115,7 @@ async def get_vehicle_information(args) -> None:
 
 async def watch_car(args) -> None:
     """Get status of vehicle."""
-    account = SmartAccount(args.username, args.password)
+    account = SmartAccount(args.accesstoken)
     await account.get_vehicles()
 
     while True:
@@ -127,7 +127,7 @@ async def watch_car(args) -> None:
 
 async def set_climate(args) -> None:
     """Set climate of vehicle."""
-    account = SmartAccount(args.username, args.password)
+    account = SmartAccount(args.accesstoken)
     await account.get_vehicles()
     if not args.vin:
         args.vin = list(account.vehicles.keys())[0]
@@ -139,7 +139,7 @@ async def set_climate(args) -> None:
 
 async def set_seatheating(args) -> None:
     """Set heating of seats in vehicle."""
-    account = SmartAccount(args.username, args.password)
+    account = SmartAccount(args.accesstoken)
     await account.get_vehicles()
     if not args.vin:
         args.vin = list(account.vehicles.keys())[0]
@@ -150,9 +150,8 @@ async def set_seatheating(args) -> None:
 
 
 def _add_default_args(parser: argparse.ArgumentParser):
-    """Add the default arguments username, password to the parser."""
-    parser.add_argument("--username", help="Smart username", **environ_or_required("SMART_USERNAME"))
-    parser.add_argument("--password", help="Smart password", **environ_or_required("SMART_PASSWORD"))
+    """Add the volvo id access token to the parser."""
+    parser.add_argument("--accesstoken", help="Volvo id access token", **environ_or_required("VOLVO_ID_ACCESS_TOKEN"))
 
 
 def main():

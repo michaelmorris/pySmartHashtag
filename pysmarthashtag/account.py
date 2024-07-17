@@ -22,11 +22,8 @@ _LOGGER = logging.getLogger(__name__)
 class SmartAccount:
     """Create a new connection to the Smart web service."""
 
-    username: str
-    """Username for the Smart account."""
-
-    password: InitVar[str]
-    """Password for the Smart account."""
+    accesstoken: str
+    """Access token for the volvo idaccount."""
 
     config: SmartClientConfiguration = None
     """Configuration for the Smart client."""
@@ -37,12 +34,12 @@ class SmartAccount:
     vehicles: Dict[str, SmartVehicle] = field(default_factory=dict, init=False)
     """Vehicles associated with the account."""
 
-    def __post_init__(self, password, log_responses):
+    def __post_init__(self, log_responses):
         """Initialize the account."""
 
         if self.config is None:
             self.config = SmartClientConfiguration(
-                SmartAuthentication(self.username, password),
+                SmartAuthentication(self.accesstoken),
                 log_responses=log_responses,
             )
 
@@ -100,7 +97,7 @@ class SmartAccount:
         if self.config.authentication.api_user_id is None:
             await self.config.authentication.login()
 
-        _LOGGER.debug("Getting vehicles for account %s", self.username)
+        _LOGGER.debug("Getting vehicles for account")
 
         if len(self.vehicles) == 0 or force_init:
             await self._init_vehicles()

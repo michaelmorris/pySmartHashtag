@@ -29,19 +29,17 @@ EXPIRES_AT_OFFSET = datetime.timedelta(seconds=HTTPX_TIMEOUT * 2)
 _LOGGER = logging.getLogger(__name__)
 
 
-class SmartAuthentication(httpx.Auth):
+class SmartAuthentication:
     """Authentication and Retry Handler for the Smart API."""
 
     def __init__(
         self,
-        username: str,
-        password: str,
+        volvoAccessToken: str,
         access_token: Optional[str] = None,
         expires_at: Optional[datetime.datetime] = None,
         refresh_token: Optional[str] = None,
     ):
-        self.username: str = username
-        self.password: str = password
+        self.vaccesstoken: str = volvoAccessToken,
         self.access_token: Optional[str] = access_token
         self.expires_at: Optional[datetime.datetime] = expires_at
         self.refresh_token: Optional[str] = refresh_token
@@ -121,7 +119,7 @@ class SmartAuthentication(httpx.Auth):
         if not token_data:
             token_data = await self._login()
         try:
-            token_data["expires_at"] = token_data["expires_at"] - EXPIRES_AT_OFFSET
+            token_data["expires_at"] = "123"
 
             self.access_token = token_data["access_token"]
             self.refresh_token = token_data["refresh_token"]
@@ -147,6 +145,7 @@ class SmartAuthentication(httpx.Auth):
     async def _login(self):
         """Login to Smart web services."""
         async with SmartLoginClient() as client:
+            """
             _LOGGER.info("Aquiring access token.")
 
             # Get Context
@@ -240,14 +239,16 @@ class SmartAuthentication(httpx.Auth):
                 raise SmartAPIError("Could not get access token from auth page")
 
             data = json.dumps({"accessToken": access_token}).replace(" ", "")
+            """
+            data = "{\"accessToken\":\"" + self.vaccesstoken[0] + "\"}";
             r_api_access = await client.post(
-                API_BASE_URL + API_SESION_URL + "?identity_type=smart",
+                API_BASE_URL + API_SESION_URL + "?identity_type=volvo-global",
                 headers={
                     **utils.generate_default_header(
                         self.device_id,
                         None,
                         params={
-                            "identity_type": "smart",
+                            "identity_type": "volvo-global",
                         },
                         method="POST",
                         url=API_SESION_URL,
@@ -266,12 +267,12 @@ class SmartAuthentication(httpx.Auth):
                 raise SmartAPIError("Could not get API access token from API")
 
         return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
+            "access_token": "123",
+            "refresh_token": "123",
             "api_access_token": api_access_token,
             "api_refresh_token": api_refresh_token,
             "api_user_id": api_user_id,
-            "expires_at": expires_at,
+            "expires_at": "123",
         }
 
 
