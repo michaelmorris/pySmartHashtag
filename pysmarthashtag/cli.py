@@ -8,6 +8,7 @@ import os
 import time
 
 from pysmarthashtag.account import SmartAccount
+from pysmarthashtag.models import SmartReauthenicationRequired
 
 
 def environ_or_required(key):
@@ -95,8 +96,15 @@ async def parse_command(args) -> None:
 
 async def get_status(args) -> None:
     """Get status of vehicle."""
-    account = SmartAccount(args.accesstoken)
-    await account.get_vehicles()
+    account = SmartAccount(args.username, args.password, args.provider)
+    try:
+        await account.get_vehicles()
+    except SmartReauthenicationRequired:
+        await account.reauth_phase1()
+        print("Enter OTP\n")
+        otp = input()
+        await account.reauth_phase2(otp)
+        await account.get_vehicles()
 
     for vin, vehicle in account.vehicles.items():
         print(f"VIN: {vin} -> {vehicle.engine_state}")
@@ -104,8 +112,15 @@ async def get_status(args) -> None:
 
 async def get_vehicle_information(args) -> None:
     """Get status of vehicle."""
-    account = SmartAccount(args.accesstoken)
-    await account.get_vehicles()
+    account = SmartAccount(username = args.username, password = args.password, provider =   args.provider)
+    try:
+        await account.get_vehicles()
+    except SmartReauthenicationRequired:
+        await account.reauth_phase1()
+        print("Enter OTP\n")
+        otp = input()
+        await account.reauth_phase2(otp)
+        await account.get_vehicles()
 
     for vin, vehicle in account.vehicles.items():
         car = await account.get_vehicle_information(vin)
@@ -115,8 +130,15 @@ async def get_vehicle_information(args) -> None:
 
 async def watch_car(args) -> None:
     """Get status of vehicle."""
-    account = SmartAccount(args.accesstoken)
-    await account.get_vehicles()
+    account = SmartAccount(args.username, args.password, args.provider)
+    try:
+        await account.get_vehicles()
+    except SmartReauthenicationRequired:
+        await account.reauth_phase1()
+        print("Enter OTP\n")
+        otp = input()
+        await account.reauth_phase2(otp)
+        await account.get_vehicles()
 
     while True:
         for vin, vehicle in account.vehicles.items():
@@ -127,8 +149,15 @@ async def watch_car(args) -> None:
 
 async def set_climate(args) -> None:
     """Set climate of vehicle."""
-    account = SmartAccount(args.accesstoken)
-    await account.get_vehicles()
+    account = SmartAccount(args.username, args.password, args.provider)
+    try:
+        await account.get_vehicles()
+    except SmartReauthenicationRequired:
+        await account.reauth_phase1()
+        print("Enter OTP\n")
+        otp = input()
+        await account.reauth_phase2(otp)
+        await account.get_vehicles()
     if not args.vin:
         args.vin = list(account.vehicles.keys())[0]
     await account.get_vehicle_information(args.vin)
@@ -139,10 +168,17 @@ async def set_climate(args) -> None:
 
 async def set_seatheating(args) -> None:
     """Set heating of seats in vehicle."""
-    account = SmartAccount(args.accesstoken)
-    await account.get_vehicles()
+    account = SmartAccount(args.username, args.password, args.provider)
+    try:
+        await account.get_vehicles()
+    except SmartReauthenicationRequired:
+        await account.reauth_phase1()
+        print("Enter OTP\n")
+        otp = input()
+        await account.reauth_phase2(otp)
+        await account.get_vehicles()
     if not args.vin:
-        args.vin = list(account.vehicles.keys())[0]
+        args.vin = list(account.vehicles.keys())[0] 
     await account.get_vehicle_information(args.vin)
 
     climate_ctrl = account.vehicles[args.vin].climate_control
@@ -150,8 +186,10 @@ async def set_seatheating(args) -> None:
 
 
 def _add_default_args(parser: argparse.ArgumentParser):
-    """Add the volvo id access token to the parser."""
-    parser.add_argument("--accesstoken", help="Volvo id access token", **environ_or_required("VOLVO_ID_ACCESS_TOKEN"))
+    """Add the default arguments username, password, api provider to the parser."""
+    parser.add_argument("--username", help="Account username", **environ_or_required("SMART_USERNAME"))
+    parser.add_argument("--password", help="Account password", **environ_or_required("SMART_PASSWORD"))
+    parser.add_argument("--provider", help="API Provider (Volvo or Smart)", **environ_or_required("API_PROVIDER"))
 
 
 def main():

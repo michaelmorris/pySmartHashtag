@@ -1,25 +1,11 @@
 # pySmartHashtag
 
-[![GitHub Release][releases-shield]][releases]
-[![License][license-shield]](LICENSE)
-[![CodeQL Validation][codeql-shield]][codeql]
-[![Dependency Validation][tests-shield]][tests]
+This is a proof of concept experimental fork of pySmartHashtag by Bastian Neumann to make it compatible with Volvo EX30 cars.
 
-API wrapper for Smart #1 and #3 Cloud Service
+The Volvo EX30 is a geely platform car just like the Smart #1 and #3, and as it turns out has a seemingly identical API to those cars, but uses a different identity provider to initially log in to geely's platform (the Volvo ID service).
 
-Regard this to be kind of stable. This library is used in custom [Homeassistant](https://homeassistant.io) component [Smart Hashtag](https://github.com/DasBasti/SmartHashtag)
+The current status of this code is that it appears to work via the CLI. It may infact support some functions not available in the official EX30 app (requests to enable the seat heaters appear to work, which is not possible in the EX30 app - the API appears to report that it worked, but I haven't been able to confirm the heaters actually physically turning on yet, its too hot where I am to tell currently). It will not work with the accompanying home assistant plugin at this stage as the volvo identity API requires an interactive authentication process (it needs the user to enter an OTP code that is emailed to them) and the plugin does not support that. I may in the future similarly fork the home assistant plugin to make it work with this, but I can give no promises at this point.
 
-Get this custom integration into homeassistant
+I've tried to keep the code compatible with both Smart cars and the EX30, but as I don't have a Smart car to test it with its likely currently broken.
 
-[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=smarthashtag)
-
-[![Project Maintenance][maintenance-shield]](https://platinenmacher.tech)
-
-[license-shield]: https://img.shields.io/github/license/DasBasti/pysmarthashtag.svg
-[maintenance-shield]: https://img.shields.io/badge/maintainer-Bastian%20Neumann%20%40DasBasti-blue.svg
-[releases-shield]: https://img.shields.io/github/v/release/DasBasti/pysmarthashtag.svg
-[releases]: https://github.com/DasBasti/pysmarthashtag/releases
-[tests-shield]: https://github.com/DasBasti/SmartHashtag/actions/workflows/tests.yml/badge.svg
-[tests]: https://github.com/DasBasti/pySmartHashtag/actions/workflows/python-package.yml
-[codeql-shield]: https://github.com/DasBasti/smarthashtag/actions/workflows/codeql-analysis.yml/badge.svg
-[codeql]: https://github.com/DasBasti/pySmartHashtag/actions/workflows/github-code-scanning/codeql
+This is mostly for my own experimentation at this point. The changes I've made to the code are pretty rough, both because I'm simply using it for experiments and because I'm not a python dev. Please do not expect any ongoing support or development at this point, or any further work at all - I do not know if I have the time to commit for that, and I do not know if Bastian has any intention of using any of this work. That said, please do feel free to use this work as a base - I have put this on github for the purpose of sharing what I've found.

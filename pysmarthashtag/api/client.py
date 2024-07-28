@@ -5,7 +5,7 @@ from typing import Deque, Optional
 
 import httpx
 
-from pysmarthashtag.api.authentication import SmartAuthentication
+from pysmarthashtag.api.authentication import AbstractAuthentication
 from pysmarthashtag.const import (
     HTTPX_TIMEOUT,
     SERVER_URL,
@@ -25,7 +25,7 @@ RESPONSE_STORE: Deque[AnonymizedResponse] = deque(maxlen=10)
 class SmartClientConfiguration:
     """Stores global settings for SmartClient."""
 
-    authentication: SmartAuthentication
+    authentication: AbstractAuthentication
     log_responses: Optional[bool] = False
 
     def set_log_responses(self, log_responses: bool) -> None:

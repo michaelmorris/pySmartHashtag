@@ -1,4 +1,4 @@
-"""Access to Smart account for your vehicles therin."""
+"""Access to geely account for your vehicles therin."""
 
 import datetime
 import json
@@ -8,8 +8,9 @@ from typing import Dict
 
 from pysmarthashtag.api import utils
 from pysmarthashtag.api.authentication import SmartAuthentication
+from pysmarthashtag.api.authentication_volvo import VolvoAuthentication
 from pysmarthashtag.api.client import SmartClient, SmartClientConfiguration
-from pysmarthashtag.const import API_BASE_URL, API_CARS_URL, API_SELECT_CAR_URL
+from pysmarthashtag.const import API_BASE_URL, API_BASE_URL_VOLVO, API_CARS_URL, API_SELECT_CAR_URL
 from pysmarthashtag.models import SmartAuthError, SmartHumanCarConnectionError, SmartTokenRefreshNecessary
 from pysmarthashtag.vehicle.vehicle import SmartVehicle
 
@@ -20,28 +21,52 @@ _LOGGER = logging.getLogger(__name__)
 
 @dataclass
 class SmartAccount:
-    """Create a new connection to the Smart web service."""
+    """Create a new connection to the Geely web service."""
 
-    accesstoken: str
-    """Access token for the volvo idaccount."""
+    username: str
+    """Username for the user identity account."""
+
+    password: str
+    """Password for the user identity account."""
+
+    identity_provider: str
+    """identity provider, volvo or smart"""
 
     config: SmartClientConfiguration = None
     """Configuration for the Smart client."""
 
-    log_responses: InitVar[bool] = False
+    log_responses: bool = False
     """Optional. If set, all responses from the server will be logged to this directory."""
 
     vehicles: Dict[str, SmartVehicle] = field(default_factory=dict, init=False)
     """Vehicles associated with the account."""
 
-    def __post_init__(self, log_responses):
-        """Initialize the account."""
+    _API_BASE_URL: str = None
+
+    def __post_init__(self):
+        """Initialize the account."""           
+
+        if (self.identity_provider is not None):
+            if (self.identity_provider == 'volvo'):
+                self._API_BASE_URL = API_BASE_URL_VOLVO
+            if (self.identity_provider == 'smart'):
+                self._API_BASE_URL = API_BASE_URL
+
+        if (self._API_BASE_URL is None):
+            self._API_BASE_URL = API_BASE_URL
+            self.identity_provider = 'smart'
 
         if self.config is None:
-            self.config = SmartClientConfiguration(
-                SmartAuthentication(self.accesstoken),
-                log_responses=log_responses,
-            )
+            if (self.identity_provider == 'smart'):
+                self.config = SmartClientConfiguration(
+                    SmartAuthentication(self.username, self.password),
+                    log_responses=self.log_responses,
+                )
+            if (self.identity_provider == 'volvo'):
+                self.config = SmartClientConfiguration(
+                    VolvoAuthentication(self.username, self.password),
+                    log_responses=self.log_responses,
+                )   
 
     async def login(self, force_refresh: bool = False) -> None:
         """Get the vehicles associated with the account."""
@@ -49,8 +74,19 @@ class SmartAccount:
             self.config.authentication = None
         await self.config.authentication.login()
 
+
+
+    async def reauth_phase1(self) -> None:
+        """Do phase 1 of full reauthentication (login using username and password)"""
+        await self.config.authentication.full_login_stage_1()
+
+
+    async def reauth_phase2(self, otp) -> None:
+        """Do phase 2 of full reauthentication (Confirm login using otp code)"""
+        await self.config.authentication.full_login_stage_2(otp)
+
     async def _init_vehicles(self) -> None:
-        """Initialize vehicles from Smart servers."""
+        """Initialize vehicles from geely servers."""
         _LOGGER.debug("Getting initial vehicle list")
 
         fetched_at = datetime.datetime.now(datetime.timezone.utc)
@@ -63,11 +99,10 @@ class SmartAccount:
             for retry in range(2):
                 try:
                     vehicles_response = await client.get(
-                        API_BASE_URL + API_CARS_URL + "?" + utils.join_url_params(params),
+                        self._API_BASE_URL + API_CARS_URL + "?" + utils.join_url_params(params),
                         headers={
                             **utils.generate_default_header(
-                                client.config.authentication.device_id,
-                                client.config.authentication.api_access_token,
+                                client.config.authentication,
                                 params=params,
                                 method="GET",
                                 url=API_CARS_URL,
@@ -122,11 +157,10 @@ class SmartAccount:
             for retry in range(2):
                 try:
                     r_car_info = await client.post(
-                        API_BASE_URL + API_SELECT_CAR_URL,
+                        self._API_BASE_URL + API_SELECT_CAR_URL,
                         headers={
                             **utils.generate_default_header(
-                                client.config.authentication.device_id,
-                                client.config.authentication.api_access_token,
+                                client.config.authentication,
                                 params={},
                                 method="POST",
                                 url=API_SELECT_CAR_URL,
@@ -158,11 +192,10 @@ class SmartAccount:
             for retry in range(2):
                 try:
                     r_car_info = await client.get(
-                        API_BASE_URL + "/remote-control/vehicle/status/" + vin + "?" + utils.join_url_params(params),
+                        self._API_BASE_URL + "/remote-control/vehicle/status/" + vin + "?" + utils.join_url_params(params),
                         headers={
                             **utils.generate_default_header(
-                                client.config.authentication.device_id,
-                                client.config.authentication.api_access_token,
+                                client.config.authentication,
                                 params=params,
                                 method="GET",
                                 url="/remote-control/vehicle/status/" + vin,

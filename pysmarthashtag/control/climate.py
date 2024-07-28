@@ -57,8 +57,7 @@ class ClimateControll:
                         API_BASE_URL + API_TELEMATICS_URL + self.vin,
                         headers={
                             **utils.generate_default_header(
-                                client.config.authentication.device_id,
-                                client.config.authentication.api_access_token,
+                                client.config.authentication,
                                 params={},
                                 method="PUT",
                                 url=API_TELEMATICS_URL + self.vin,
@@ -114,8 +113,7 @@ class ClimateControll:
                         API_BASE_URL + API_TELEMATICS_URL + self.vin,
                         headers={
                             **utils.generate_default_header(
-                                client.config.authentication.device_id,
-                                client.config.authentication.api_access_token,
+                                client.config.authentication,
                                 params={},
                                 method="PUT",
                                 url=API_TELEMATICS_URL + self.vin,

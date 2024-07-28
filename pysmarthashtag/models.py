@@ -96,6 +96,11 @@ class SmartRemoteServiceError(SmartAPIError):
     """Error when executing web services."""
 
 
+class SmartReauthenicationRequired(Exception):
+    """Refresh token has expired and identity provider requires a full interactive reauthentication."""
+
+
+
 def get_element_from_dict_maybe(
     data: dict, *path: str, default: "Any|None" = None
 ) -> Optional[Union[dict, str, int, float]]:

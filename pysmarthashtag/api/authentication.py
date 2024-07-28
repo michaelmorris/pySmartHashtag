@@ -1,5 +1,4 @@
 """Authentication management for Smart APIs."""
-
 import asyncio
 import datetime
 import json
@@ -14,138 +13,31 @@ from httpx._models import Request, Response
 
 from pysmarthashtag.api import utils
 from pysmarthashtag.const import (
-    API_BASE_URL,
-    API_KEY,
-    API_SESION_URL,
-    AUTH_URL,
-    CONTEXT_URL,
+    API_BASE_URL_VOLVO,
+    API_KEY_VOLVO,
+    APP_ID_VOLVO,
+    AUTH_URL_VOLVO,
+    TOKEN_URL_VOLVO,
+    AUTHN_FLOW_URL_VOLVO,
     HTTPX_TIMEOUT,
+    API_SESION_URL,
     LOGIN_URL,
-)
+)   
 from pysmarthashtag.models import SmartAPIError
 
 EXPIRES_AT_OFFSET = datetime.timedelta(seconds=HTTPX_TIMEOUT * 2)
 
 _LOGGER = logging.getLogger(__name__)
 
+from pysmarthashtag.api.abstractauthentication import AbstractAuthentication
 
-class SmartAuthentication:
+class SmartAuthentication(AbstractAuthentication):
     """Authentication and Retry Handler for the Smart API."""
-
-    def __init__(
-        self,
-        volvoAccessToken: str,
-        access_token: Optional[str] = None,
-        expires_at: Optional[datetime.datetime] = None,
-        refresh_token: Optional[str] = None,
-    ):
-        self.vaccesstoken: str = volvoAccessToken,
-        self.access_token: Optional[str] = access_token
-        self.expires_at: Optional[datetime.datetime] = expires_at
-        self.refresh_token: Optional[str] = refresh_token
-        self.device_id: str = secrets.token_hex(8)
-        self._lock: Optional[asyncio.Lock] = None
-        self.api_access_token: Optional[str] = None
-        self.api_refresh_token: Optional[str] = None
-        self.api_user_id: Optional[str] = None
-        _LOGGER.debug("Device ID: %s", self.device_id)
-
-    @property
-    def login_lock(self) -> asyncio.Lock:
-        """Make sure there is only one login at a time."""
-        if not self._lock:
-            self._lock = asyncio.Lock()
-        return self._lock
-
-    def sync_auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
-        """Handle synchronous authentication flow for requests."""
-        raise RuntimeError("Cannot use an async authentication class with httpx.Client")
-
-    async def async_auth_flow(self, request: Request) -> AsyncGenerator[Request, Response]:
-        """Asynchronous authentication flow for handling requests."""
-        _LOGGER.debug("Handling request %s", request.url)
-        # Get an initial login on first call
-        async with self.login_lock:
-            if not self.access_token:
-                await self.login()
-        request.headers["Authorization"] = f"Bearer {self.access_token}"
-
-        response: httpx.Response = yield request
-
-        if response.is_success:
-            return
-
-        await response.aread()
-
-        retry_count = 0
-        while (
-            response.status_code == 429 or (response.status_code == 403 and "quota" in response.text.lower())
-        ) and retry_count < 3:
-            wait_time = get_retry_wait_time(response)
-            _LOGGER.debug("Rate limit exceeded. Waiting %s seconds", wait_time)
-            await asyncio.sleep(wait_time)
-            response = yield request
-            await response.aread()
-            retry_count += 1
-
-        if response.status_code == 401:
-            async with self.login_lock:
-                _LOGGER.debug("Token expired. Refreshing token")
-                await self.login()
-                request.headers["Authorization"] = f"Bearer {self.access_token}"
-
-            _LOGGER.debug("Token expired. Refreshing token")
-            await self.login()
-            request.headers["Authorization"] = f"Bearer {self.access_token}"
-            response = yield request
-            await response.aread()
-
-        try:
-            response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            _LOGGER.error(
-                "Error handling request %s: %s",
-                request.url,
-                exc,
-            )
-            raise
-
-    async def login(self) -> None:
-        """Login to the Smart API."""
-        _LOGGER.debug("Logging in to Smart API")
-        token_data = {}
-        if self.refresh_token:
-            token_data = await self._refresh_access_token()
-        if not token_data:
-            token_data = await self._login()
-        try:
-            token_data["expires_at"] = "123"
-
-            self.access_token = token_data["access_token"]
-            self.refresh_token = token_data["refresh_token"]
-            self.api_access_token = token_data["api_access_token"]
-            self.api_refresh_token = token_data["api_refresh_token"]
-            self.api_user_id = token_data["api_user_id"]
-            self.expires_at = token_data["expires_at"]
-            _LOGGER.debug(f"Login successful: {token_data}")
-            return True
-        except KeyError:
-            raise SmartAPIError("Could not login to Smart API")
-
-    async def _refresh_access_token(self):
-        """Refresh the access token."""
-        try:
-            async with SmartLoginClient() as _:
-                _LOGGER.debug("Refreshing access token via relogin because refresh token is not implemented")
-                await self._login()
-        except SmartAPIError:
-            _LOGGER.debug("Refreshing access token failed. Logging in again")
-            return {}
-
+        
     async def _login(self):
         """Login to Smart web services."""
         async with SmartLoginClient() as client:
-            """
+            
             _LOGGER.info("Aquiring access token.")
 
             # Get Context
@@ -239,14 +131,12 @@ class SmartAuthentication:
                 raise SmartAPIError("Could not get access token from auth page")
 
             data = json.dumps({"accessToken": access_token}).replace(" ", "")
-            """
-            data = "{\"accessToken\":\"" + self.vaccesstoken[0] + "\"}";
+
             r_api_access = await client.post(
                 API_BASE_URL + API_SESION_URL + "?identity_type=volvo-global",
                 headers={
                     **utils.generate_default_header(
-                        self.device_id,
-                        None,
+                        self,
                         params={
                             "identity_type": "volvo-global",
                         },
@@ -267,12 +157,12 @@ class SmartAuthentication:
                 raise SmartAPIError("Could not get API access token from API")
 
         return {
-            "access_token": "123",
-            "refresh_token": "123",
+            "access_token": access_token,
+            "refresh_token": refresh_token,
             "api_access_token": api_access_token,
             "api_refresh_token": api_refresh_token,
             "api_user_id": api_user_id,
-            "expires_at": "123",
+            "expires_at": expires_at,
         }
 
 
